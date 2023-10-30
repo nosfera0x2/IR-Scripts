@@ -9,6 +9,9 @@ timestamp=$(date +%Y%m%d%H%M%S)
 # Output file name
 output_file="${domain}_${timestamp}_shodan_output.txt"
 
+# Initialize an empty output file
+> "$output_file"
+
 # Initialize an array to store scanned IP addresses
 scanned_ips=()
 
