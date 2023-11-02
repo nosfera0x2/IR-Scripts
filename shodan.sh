@@ -12,9 +12,6 @@ output_file="${domain}_${timestamp}_shodan_output.txt"
 # Initialize an empty output file
 > "$output_file"
 
-# Initialize an array to store scanned IP addresses
-scanned_ips=()
-
 # Function to run Shodan on an IP address
 run_shodan() {
     local ip="$1"
@@ -28,12 +25,21 @@ run_shodan() {
 # Step 1: Get subdomains using crt.sh
 subdomains=$(curl -s "https://crt.sh/?q=%.$domain&output=json" | jq -r '.[].name_value' | grep -v "CN=" | sort -u)
 
+if [ -z "$subdomains" ]; then
+    echo "No subdomains found for $domain. Exiting."
+    exit 1
+fi
+
 # Step 2: Find IP addresses for each subdomain and run Shodan
 for subdomain in $subdomains; do
-    host "$subdomain" | grep "has address" | grep "$domain" | while read -r line; do
-        ip=$(echo "$line" | cut -d" " -f4)
+    host_output=$(host "$subdomain" | grep "has address" | grep "$domain")
+
+    if [ -n "$host_output" ]; then
+        ip=$(echo "$host_output" | cut -d" " -f4)
         run_shodan "$ip"
-    done
+    else
+        echo "No IP address found for $subdomain. Skipping."
+    fi
 done
 
 echo "Shodan scan results saved to $output_file"
